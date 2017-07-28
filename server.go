@@ -5,7 +5,6 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -61,25 +60,30 @@ func Register(instance, service, domain string, port int, text []string, iface *
 		return nil, fmt.Errorf("Missing port")
 	}
 
-	var err error
-	if entry.HostName == "" {
-		entry.HostName, err = os.Hostname()
-		if err != nil {
-			return nil, fmt.Errorf("Could not determine host")
-		}
-	}
-	entry.HostName = fmt.Sprintf("%s.", trimDot(entry.HostName))
+	var addrs []net.IP
+	ifaces, err := net.Interfaces()
+	// handle err
+	for _, i := range ifaces {
+		iaddrs, err := i.Addrs()
 
-	addrs, err := net.LookupIP(entry.HostName)
-	if err != nil {
-		// Try appending the host domain suffix and lookup again
-		// (required for Linux-based hosts)
-		tmpHostName := fmt.Sprintf("%s%s.", entry.HostName, entry.Domain)
-		addrs, err = net.LookupIP(tmpHostName)
-		if err != nil {
-			return nil, fmt.Errorf("Could not determine host IP addresses for %s", entry.HostName)
+		if nil != err {
+			continue
+		}
+
+		for _, addr := range iaddrs {
+			var ip net.IP = nil
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if nil != ip {
+				addrs = append(addrs, ip)
+			}
 		}
 	}
+
 	for i := 0; i < len(addrs); i++ {
 		if ipv4 := addrs[i].To4(); ipv4 != nil {
 			entry.AddrIPv4 = addrs[i]
