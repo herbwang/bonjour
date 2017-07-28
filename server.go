@@ -60,6 +60,15 @@ func Register(instance, service, domain string, port int, text []string, iface *
 		return nil, fmt.Errorf("Missing port")
 	}
 
+	var err error
+	if entry.HostName == "" {
+		entry.HostName, err = os.Hostname()
+		if err != nil {
+			return nil, fmt.Errorf("Could not determine host")
+		}
+	}
+	entry.HostName = fmt.Sprintf("%s.", trimDot(entry.HostName))
+
 	var addrs []net.IP
 	ifaces, err := net.Interfaces()
 	// handle err
