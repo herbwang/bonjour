@@ -71,7 +71,14 @@ func Register(instance, service, domain string, port int, text []string, iface *
 	entry.HostName = fmt.Sprintf("%s.", trimDot(entry.HostName))
 
 	var addrs []net.IP
-	ifaces, err := net.Interfaces()
+	var ifaces []net.Interface
+
+	if iface != nil {
+		ifaces = append(ifaces, *iface)
+	} else {
+		ifaces, err = net.Interfaces()
+	}
+
 	// handle err
 	for _, i := range ifaces {
 		iaddrs, err := i.Addrs()
